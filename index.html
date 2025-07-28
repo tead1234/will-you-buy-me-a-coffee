@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏎️ 카트 레이싱 - 점심내기/커피내기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 50%, #90EE90 100%);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .start-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            font-size: 18px;
+            padding: 15px 30px;
+            font-weight: bold;
+        }
+
+        .participants {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .participant-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .participant-tag {
+            background: #f1f2f6;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remove-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .race-track {
+            background: #333;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 30px 0;
+            min-height: 800px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .race-track.camera-focus {
+            transform: scale(1.2);
+            transform-origin: center;
+        }
+
+        .track-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: repeating-linear-gradient(
+                to bottom,
+                white 0px,
+                white 20px,
+                transparent 20px,
+                transparent 40px
+            );
+            transform: translateX(-50%);
+        }
+
+        .start-line {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, red, white, red);
+            z-index: 5;
+        }
+
+        .finish-line {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(
+                90deg,
+                #000 0px,
+                #000 20px,
+                #fff 20px,
+                #fff 40px
+            );
+            z-index: 5;
+        }
+
+        .kart {
+            position: absolute;
+            width: 60px;
+            height: 40px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 50% 50% 20% 20%;
+            border: 3px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            font-size: 11px;
+            transition: transform 0.1s;
+            z-index: 10;
+        }
+
+        .kart::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 10%;
+            right: 10%;
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
+        }
+
+        .kart::after {
+            content: '🏎️';
+            position: absolute;
+            top: -25px;
+            font-size: 20px;
+        }
+
+        .lane {
+            position: absolute;
+            top: 60px;
+            bottom: 60px;
+            width: 80px;
+            border-left: 2px dashed #666;
+            border-right: 2px dashed #666;
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .winner {
+            font-size: 2em;
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .race-results {
+            margin-top: 20px;
+        }
+
+        .position {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 10px;
+            border-left: 5px solid #ddd;
+        }
+
+        .position.first { border-left-color: #f1c40f; }
+        .position.last { border-left-color: #e74c3c; }
+
+        .countdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5em;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+        }
+
+        .clouds {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            height: 60px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 60"><path fill="white" opacity="0.3" d="M100 40c0-11 9-20 20-20s20 9 20 20c11 0 20 9 20 20s-9 20-20 20H120c-11 0-20-9-20-20z"/><path fill="white" opacity="0.2" d="M300 30c0-8 7-15 15-15s15 7 15 15c8 0 15 7 15 15s-7 15-15 15H315c-8 0-15-7-15-15z"/></svg>') repeat-x;
+            animation: clouds 20s linear infinite;
+        }
+
+        .scrolling-bg {
+            position: absolute;
+            width: 100%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 50px,
+                rgba(255,255,255,0.1) 50px,
+                rgba(255,255,255,0.1) 52px
+            );
+            animation: scrollBg 3s linear infinite;
+        }
+
+        .side-objects {
+            position: absolute;
+            width: 40px;
+            height: 100%;
+            top: 0;
+        }
+
+        .side-objects.left {
+            left: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 80px,
+                #2d5016 80px,
+                #2d5016 120px,
+                transparent 120px,
+                transparent 200px,
+                #8B4513 200px,
+                #8B4513 240px
+            );
+            animation: sideScroll 4s linear infinite;
+        }
+
+        .side-objects.right {
+            right: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 100px,
+                #654321 100px,
+                #654321 140px,
+                transparent 140px,
+                transparent 220px,
+                #2d5016 220px,
+                #2d5016 260px
+            );
+            animation: sideScroll 4.5s linear infinite;
+        }
+
+        @keyframes clouds {
+            from { background-position-x: 0; }
+            to { background-position-x: 1200px; }
+        }
+
+        @keyframes scrollBg {
+            from { transform: translateY(-50px); }
+            to { transform: translateY(50px); }
+        }
+
+        @keyframes sideScroll {
+            from { background-position-y: 0px; }
+            to { background-position-y: 300px; }
+        }
+
+        @keyframes kartMove {
+            0% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(-2px) rotate(1deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        .racing {
+            animation: kartMove 0.2s infinite;
+        }
+
+        .obstacle {
+            position: absolute;
+            width: 120px;
+            height: 30px;
+            background: linear-gradient(45deg, #ff4757, #ff3742);
+            border-radius: 15px;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            font-size: 10px;
+            z-index: 8;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .obstacle::before {
+            content: '⚠️';
+            position: absolute;
+            left: -25px;
+            font-size: 16px;
+            animation: warning 1s infinite;
+        }
+
+        .obstacle.hit {
+            background: linear-gradient(45deg, #666, #555);
+            animation: obstacleHit 0.5s;
+        }
+
+        .kart.slowed {
+            background: linear-gradient(45deg, #666, #888) !important;
+            animation: kartSlowed 0.5s infinite;
+        }
+
+        .kart.camera-target {
+            transform: scale(1.3);
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.8);
+            z-index: 15;
+            border: 3px solid #ffff00;
+            animation: kartHighlight 1s ease-in-out infinite alternate;
+        }
+
+        .camera-overlay {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 1001;
+            display: none;
+            animation: cameraAlert 0.5s ease-in-out;
+        }
+
+        @keyframes warning {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        @keyframes obstacleHit {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes kartSlowed {
+            0% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-1px) rotate(-2deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(-1px) rotate(2deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        @keyframes kartHighlight {
+            0% { box-shadow: 0 0 20px rgba(255, 255, 0, 0.8); }
+            100% { box-shadow: 0 0 30px rgba(255, 255, 0, 1), 0 0 40px rgba(255, 255, 0, 0.5); }
+        }
+
+        @keyframes cameraAlert {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.8); }
+            100% { opacity: 1; transform: translateX(-50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏎️ 카트 레이싱</h1>
+        <p class="subtitle">누가 꼴찌할까요? 점심내기/커피내기를 공정하게 결정해보세요!</p>
+        
+        <div class="controls">
+            <div class="input-group">
+                <input type="text" id="nameInput" placeholder="팀원 이름을 입력하세요" maxlength="8">
+                <button onclick="addParticipant()">🏁 참가자 추가</button>
+            </div>
+            <button class="start-btn" id="startBtn" onclick="startRace()" disabled>
+                🚦 레이스 시작!
+            </button>
+        </div>
+
+        <div class="participants">
+            <h3>🏎️ 참가자 목록:</h3>
+            <div class="participant-list" id="participantList"></div>
+        </div>
+
+        <div class="race-track" id="raceTrack">
+            <div class="scrolling-bg"></div>
+            <div class="side-objects left"></div>
+            <div class="side-objects right"></div>
+            <div class="clouds"></div>
+            <div class="start-line"></div>
+            <div class="track-line"></div>
+            <div class="finish-line"></div>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <div class="countdown" id="countdown"></div>
+    <div class="camera-overlay" id="cameraOverlay"></div>
+
+    <script>
+        let participants = [];
+        let isRacing = false;
+        let raceResults = [];
+        let obstacles = [];
+        let kartSlowedUntil = {}; // 카트별 감속 종료 시간
+        let cameraTarget = null; // 카메라 타겟
+        let cameraTimer = null; // 카메라 전환 타이머
+        
+        const obstacleTypes = [
+            { name: '고객지원', emoji: '📞', duration: 2000 },
+            { name: '회의', emoji: '📊', duration: 2500 },
+            { name: '12층면담', emoji: '👔', duration: 3000 }
+        ];
+
+        function addParticipant() {
+            const nameInput = document.getElementById('nameInput');
+            const name = nameInput.value.trim();
+            
+            if (name === '') {
+                alert('이름을 입력해주세요!');
+                return;
+            }
+            
+            if (participants.includes(name)) {
+                alert('이미 추가된 이름입니다!');
+                return;
+            }
+
+            if (participants.length >= 6) {
+                alert('최대 6명까지만 참가할 수 있습니다!');
+                return;
+            }
+            
+            participants.push(name);
+            nameInput.value = '';
+            updateParticipantList();
+            createKarts();
+        }
+
+        function removeParticipant(name) {
+            participants = participants.filter(p => p !== name);
+            updateParticipantList();
+            createKarts();
+        }
+
+        function updateParticipantList() {
+            const list = document.getElementById('participantList');
+            list.innerHTML = '';
+            
+            participants.forEach(name => {
+                const tag = document.createElement('div');
+                tag.className = 'participant-tag';
+                tag.innerHTML = `
+                    <span>${name}</span>
+                    <button class="remove-btn" onclick="removeParticipant('${name}')">×</button>
+                `;
+                list.appendChild(tag);
+            });
+            
+            document.getElementById('startBtn').disabled = participants.length < 2;
+        }
+
+        function createKarts() {
+            const track = document.getElementById('raceTrack');
+            
+            document.querySelectorAll('.kart').forEach(kart => kart.remove());
+            document.querySelectorAll('.lane').forEach(lane => lane.remove());
+            
+            if (participants.length === 0) return;
+
+            const trackWidth = track.offsetWidth;
+            const laneWidth = Math.min(100, trackWidth / participants.length);
+            
+            participants.forEach((name, index) => {
+                const lane = document.createElement('div');
+                lane.className = 'lane';
+                lane.style.left = `${index * laneWidth + (trackWidth - participants.length * laneWidth) / 2}px`;
+                lane.style.width = `${laneWidth}px`;
+                track.appendChild(lane);
+
+                const kart = document.createElement('div');
+                kart.className = 'kart';
+                kart.id = `kart-${index}`;
+                kart.textContent = name;
+                kart.style.left = `${index * laneWidth + (trackWidth - participants.length * laneWidth) / 2 + laneWidth/2 - 30}px`;
+                kart.style.top = '20px';
+                
+                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#fd79a8'];
+                kart.style.background = `linear-gradient(45deg, ${colors[index % colors.length]}, ${colors[(index + 1) % colors.length]})`;
+                
+                track.appendChild(kart);
+            });
+        }
+
+        function startRace() {
+            if (isRacing || participants.length < 2) return;
+            
+            isRacing = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('result').style.display = 'none';
+            raceResults = [];
+            
+            showCountdown();
+        }
+
+        function showCountdown() {
+            const countdown = document.getElementById('countdown');
+            countdown.style.display = 'block';
+            
+            let count = 3;
+            countdown.textContent = count;
+            
+            const countInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdown.textContent = count;
+                } else if (count === 0) {
+                    countdown.textContent = 'GO!';
+                } else {
+                    countdown.style.display = 'none';
+                    clearInterval(countInterval);
+                    runRace();
+                }
+            }, 1000);
+        }
+
+        function runRace() {
+            const track = document.getElementById('raceTrack');
+            const trackHeight = track.offsetHeight - 120;
+            const karts = document.querySelectorAll('.kart');
+            
+            karts.forEach(kart => kart.classList.add('racing'));
+            
+            const kartProgress = participants.map(() => 0);
+            const kartSpeeds = participants.map(() => Math.random() * 3 + 1);
+            const finished = [];
+            obstacles = [];
+            kartSlowedUntil = {};
+            
+            // 방해물 생성 타이머
+            const obstacleTimer = setInterval(() => {
+                if (obstacles.length < 3) { // 최대 3개 방해물
+                    createObstacle();
+                }
+            }, 2000);
+            
+            // 카메라 시스템 시작
+            startCameraSystem();
+            
+            const raceInterval = setInterval(() => {
+                const currentTime = Date.now();
+                let allFinished = true;
+                
+                kartProgress.forEach((progress, index) => {
+                    if (finished.includes(index)) return;
+                    
+                    // 방해물로 인한 감속 확인
+                    const isSlowed = kartSlowedUntil[index] && currentTime < kartSlowedUntil[index];
+                    const speedMultiplier = isSlowed ? 0.3 : (0.6 + Math.random() * 0.3); // 속도 조금 감소
+                    
+                    kartProgress[index] += kartSpeeds[index] * speedMultiplier;
+                    
+                    const kart = document.getElementById(`kart-${index}`);
+                    kart.style.top = `${20 + kartProgress[index]}px`;
+                    
+                    // 방해물과 충돌 검사
+                    checkObstacleCollision(index, kartProgress[index]);
+                    
+                    // 감속 상태 시각적 표시
+                    if (isSlowed) {
+                        kart.classList.add('slowed');
+                    } else {
+                        kart.classList.remove('slowed');
+                    }
+                    
+                    if (kartProgress[index] >= trackHeight) {
+                        if (!finished.includes(index)) {
+                            finished.push(index);
+                            raceResults.push({
+                                name: participants[index],
+                                position: finished.length
+                            });
+                        }
+                    } else {
+                        allFinished = false;
+                    }
+                });
+                
+                // 방해물 제거 (트랙 밖으로 나간 것들)
+                removeExpiredObstacles();
+                
+                if (allFinished) {
+                    clearInterval(raceInterval);
+                    clearInterval(obstacleTimer);
+                    stopCameraSystem();
+                    finishRace();
+                }
+            }, 50);
+        }
+
+        function createObstacle() {
+            const track = document.getElementById('raceTrack');
+            const trackWidth = track.offsetWidth;
+            const laneWidth = Math.min(100, trackWidth / participants.length);
+            const startX = (trackWidth - participants.length * laneWidth) / 2;
+            
+            // 가장 앞서가는 카트의 위치 찾기 (Y값이 가장 큰 카트 = 가장 아래쪽/앞쪽으로 간 카트)
+            let frontmostKartY = -Infinity;
+            participants.forEach((name, index) => {
+                const kart = document.getElementById(`kart-${index}`);
+                if (kart) {
+                    const kartY = parseInt(kart.style.top) || 20;
+                    frontmostKartY = Math.max(frontmostKartY, kartY); // 가장 앞선(아래쪽) 카트
+                }
+            });
+            
+            // 가장 앞선 카트보다 50px 앞쪽에 방해물 생성
+            const obstacleTargetY = frontmostKartY + 50;
+            
+            // 트랙 범위를 벗어나지 않도록 체크
+            const trackHeight = track.offsetHeight - 120; // finish line 위치 고려
+            if (obstacleTargetY >= trackHeight - 50) {
+                return; // 결승선 근처에는 방해물 생성하지 않음
+            }
+            
+            // 레이스 초반이라면 방해물 생성 안함
+            if (frontmostKartY < 100) {
+                return;
+            }
+            
+            // 랜덤 레인 선택
+            const randomLane = Math.floor(Math.random() * participants.length);
+            const obstacleType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            
+            // 타겟 위치 기준으로 ±20px 범위에서 랜덤 생성
+            const obstacleY = obstacleTargetY + (Math.random() - 0.5) * 40;
+            
+            const obstacle = document.createElement('div');
+            obstacle.className = 'obstacle';
+            obstacle.textContent = `${obstacleType.emoji} ${obstacleType.name}`;
+            obstacle.style.left = `${startX + randomLane * laneWidth + laneWidth/2 - 60}px`;
+            obstacle.style.top = `${Math.max(60, obstacleY)}px`; // 최소 시작선 아래에 생성
+            
+            const obstacleData = {
+                element: obstacle,
+                lane: randomLane,
+                y: parseInt(obstacle.style.top),
+                type: obstacleType,
+                id: Date.now()
+            };
+            
+            obstacles.push(obstacleData);
+            track.appendChild(obstacle);
+        }
+        
+        function checkObstacleCollision(kartIndex, kartY) {
+            obstacles.forEach((obstacle, obstacleIndex) => {
+                if (obstacle.lane === kartIndex) {
+                    const obstacleY = obstacle.y;
+                    const kartCurrentY = kartY + 20; // 카트 시작 위치 보정
+                    
+                    // 충돌 범위 확인 (카트와 방해물이 겹치는지)
+                    if (Math.abs(kartCurrentY - obstacleY) < 40) {
+                        // 충돌 발생!
+                        const currentTime = Date.now();
+                        kartSlowedUntil[kartIndex] = currentTime + obstacle.type.duration;
+                        
+                        // 방해물 제거 및 시각적 효과
+                        obstacle.element.classList.add('hit');
+                        setTimeout(() => {
+                            if (obstacle.element.parentNode) {
+                                obstacle.element.parentNode.removeChild(obstacle.element);
+                            }
+                            obstacles.splice(obstacleIndex, 1);
+                        }, 500);
+                    }
+                }
+            });
+        }
+        
+        function removeExpiredObstacles() {
+            const track = document.getElementById('raceTrack');
+            const trackHeight = track.offsetHeight;
+            
+            obstacles.forEach((obstacle, index) => {
+                if (obstacle.y > trackHeight || obstacle.element.classList.contains('hit')) {
+                    if (obstacle.element.parentNode) {
+                        obstacle.element.parentNode.removeChild(obstacle.element);
+                    }
+                    obstacles.splice(index, 1);
+                }
+            });
+        }
+
+        function finishRace() {
+            const karts = document.querySelectorAll('.kart');
+            karts.forEach(kart => {
+                kart.classList.remove('racing', 'slowed');
+            });
+            
+            // 모든 방해물 제거
+            document.querySelectorAll('.obstacle').forEach(obstacle => {
+                if (obstacle.parentNode) {
+                    obstacle.parentNode.removeChild(obstacle);
+                }
+            });
+            obstacles = [];
+            kartSlowedUntil = {};
+            stopCameraSystem();
+            
+            const loser = raceResults[raceResults.length - 1];
+            
+            showResult(loser.name);
+            
+            isRacing = false;
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        function showResult(winner) {
+            const result = document.getElementById('result');
+            
+            let resultsHTML = '<div class="race-results"><h3>🏁 레이스 결과</h3>';
+            raceResults.forEach((result, index) => {
+                const positionClass = index === 0 ? 'first' : (index === raceResults.length - 1 ? 'last' : '');
+                const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : ''));
+                resultsHTML += `
+                    <div class="position ${positionClass}">
+                        <span>${medal} ${result.position}등: ${result.name}</span>
+                    </div>
+                `;
+            });
+            resultsHTML += '</div>';
+            
+            result.innerHTML = `
+                <div class="winner">🎯 ${winner} 🎯</div>
+                <p><strong>꼴찌 당첨!</strong></p>
+                <p>오늘 점심/커피는 ${winner}님이 쏴주세요! 😄</p>
+                ${resultsHTML}
+            `;
+            result.style.display = 'block';
+        }
+
+        document.getElementById('nameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addParticipant();
+            }
+        });
+
+        function startCameraSystem() {
+            cameraTimer = setInterval(() => {
+                focusOnSlowKart();
+            }, 3000); // 3초마다 카메라 전환
+        }
+        
+        function stopCameraSystem() {
+            if (cameraTimer) {
+                clearInterval(cameraTimer);
+                cameraTimer = null;
+            }
+            resetCamera();
+        }
+        
+        function focusOnSlowKart() {
+            if (!isRacing || participants.length === 0) return;
+            
+            const currentTime = Date.now();
+            let slowestKarts = [];
+            
+            // 가장 느린 카트들 찾기
+            participants.forEach((name, index) => {
+                const kart = document.getElementById(`kart-${index}`);
+                if (kart) {
+                    const kartY = parseInt(kart.style.top) || 0;
+                    const isSlowed = kartSlowedUntil[index] && currentTime < kartSlowedUntil[index];
+                    slowestKarts.push({ index, name, y: kartY, isSlowed });
+                }
+            });
+            
+            // Y 좌표가 가장 작은 (뒤떨어진) 카트들 정렬
+            slowestKarts.sort((a, b) => a.y - b.y);
+            
+            // 꼴지 후보 선택 (뒤에서 2-3등)
+            const slowKarts = slowestKarts.slice(0, Math.min(3, slowestKarts.length));
+            const targetKart = slowKarts[Math.floor(Math.random() * slowKarts.length)];
+            
+            if (targetKart && targetKart.index !== cameraTarget) {
+                resetCamera();
+                cameraTarget = targetKart.index;
+                
+                const kart = document.getElementById(`kart-${targetKart.index}`);
+                const track = document.getElementById('raceTrack');
+                const overlay = document.getElementById('cameraOverlay');
+                
+                // 카트 하이라이트
+                kart.classList.add('camera-target');
+                
+                // 트랙 줌
+                track.classList.add('camera-focus');
+                
+                // 오버레이 메시지
+                const messages = [
+                    `🎥 ${targetKart.name}님이 뒤처지고 있습니다!`,
+                    `📹 꼴지 후보 ${targetKart.name}님을 주목하세요!`,
+                    `🎬 위기의 ${targetKart.name}님!`,
+                    `🔴 LIVE: ${targetKart.name}님 역전 가능할까요?`
+                ];
+                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                
+                overlay.textContent = randomMessage;
+                overlay.style.display = 'block';
+                
+                // 2초 후 카메라 리셋
+                setTimeout(() => {
+                    resetCamera();
+                }, 2000);
+            }
+        }
+        
+        function resetCamera() {
+            // 모든 카트에서 하이라이트 제거
+            document.querySelectorAll('.kart').forEach(kart => {
+                kart.classList.remove('camera-target');
+            });
+            
+            // 트랙 줌 리셋
+            const track = document.getElementById('raceTrack');
+            track.classList.remove('camera-focus');
+            
+            // 오버레이 숨기기
+            const overlay = document.getElementById('cameraOverlay');
+            overlay.style.display = 'none';
+            
+            cameraTarget = null;
+        }
+
+        window.addEventListener('resize', createKarts);
+    </script>
+</body>
+</html>
