@@ -557,6 +557,35 @@
         .kart.stopped {
             background: linear-gradient(145deg, #95a5a6, #7f8c8d) !important;
             animation: kartStopped 0.5s infinite;
+            position: relative;
+        }
+        
+        .kart.stopped::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            width: 100px;
+            height: 75px;
+            background: radial-gradient(circle, rgba(135,206,250,0.4) 0%, rgba(30,144,255,0.6) 70%, rgba(0,100,200,0.8) 100%);
+            border-radius: 50%;
+            border: 3px solid rgba(30,144,255,0.8);
+            z-index: 5;
+            animation: waterBubble 1s ease-in-out infinite alternate;
+            box-shadow: 
+                inset 10px -10px 20px rgba(255,255,255,0.3),
+                inset -10px 10px 20px rgba(0,100,200,0.2),
+                0 0 20px rgba(30,144,255,0.5);
+        }
+        
+        .kart.stopped::before {
+            content: '💧';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 20px;
+            z-index: 6;
+            animation: waterDrop 0.8s ease-in-out infinite;
         }
 
         .kart.camera-target {
@@ -632,11 +661,30 @@
         }
 
         @keyframes kartStopped {
-            0% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
-            25% { transform: translateY(-1px) rotate(-1deg); opacity: 0.5; }
-            50% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
-            75% { transform: translateY(-1px) rotate(1deg); opacity: 0.5; }
-            100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+            25% { transform: translateY(-1px) rotate(-1deg); opacity: 0.6; }
+            50% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+            75% { transform: translateY(-1px) rotate(1deg); opacity: 0.6; }
+            100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+        }
+        
+        @keyframes waterBubble {
+            0% { 
+                transform: scale(1) translateY(0px);
+                opacity: 0.7;
+            }
+            100% { 
+                transform: scale(1.05) translateY(-2px);
+                opacity: 0.9;
+            }
+        }
+        
+        @keyframes waterDrop {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            50% { transform: scale(1.2) rotate(0deg); }
+            75% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
         }
     </style>
 </head>

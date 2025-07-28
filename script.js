@@ -7,6 +7,7 @@ let kartBoostedUntil = {}; // 카트별 부스터 종료 시간
 let kartStoppedUntil = {}; // 카트별 물폭탄으로 인한 정지 종료 시간
 let kartWaterBombItems = {}; // 카트별 물폭탄 아이템 보유 여부
 let kartWaterBombUsed = {}; // 카트별 물폭탄 사용 여부
+let raceStartTime = 0; // 레이스 시작 시간
 let cameraTarget = null; // 카메라 타겟
 let cameraTimer = null; // 카메라 전환 타이머
 let boosterTimer = null; // 부스터 효과 타이머
@@ -186,10 +187,11 @@ function runRace() {
     kartStoppedUntil = {};
     kartWaterBombItems = {};
     kartWaterBombUsed = {};
+    raceStartTime = Date.now(); // 레이스 시작 시간 기록
     
-    // 50% 확률로 물폭탄 아이템 부여
+    // 30% 확률로 물폭탄 아이템 부여
     participants.forEach((name, index) => {
-        if (Math.random() < 0.5) {
+        if (Math.random() < 0.3) {
             kartWaterBombItems[index] = true;
             kartWaterBombUsed[index] = false;
         }
@@ -288,7 +290,20 @@ function runRace() {
         // 방해물 제거 (트랙 밖으로 나간 것들)
         removeExpiredObstacles();
         
-        if (allFinished) {
+        // 게임 종료 조건: 모든 카트가 완주했거나, 완주하지 못한 카트가 1명만 남았을 때
+        const unfinishedCount = participants.length - finished.length;
+        if (allFinished || unfinishedCount <= 1) {
+            // 아직 완주하지 못한 카트들을 마지막 순위로 추가
+            participants.forEach((name, index) => {
+                if (!finished.includes(index)) {
+                    finished.push(index);
+                    raceResults.push({
+                        name: participants[index],
+                        position: finished.length
+                    });
+                }
+            });
+            
             clearInterval(raceInterval);
             clearInterval(obstacleTimer);
             if (boosterTimer) clearTimeout(boosterTimer);
@@ -584,6 +599,16 @@ function checkWaterBombTrigger(kartIndex, kartProgress) {
     // 물폭탄 아이템이 없거나 이미 사용했으면 무시
     if (!kartWaterBombItems[kartIndex] || kartWaterBombUsed[kartIndex]) return;
     
+    // 게임 시작 후 3초 이전에는 물폭탄 사용 불가
+    const currentTime = Date.now();
+    if (currentTime - raceStartTime < 3000) return;
+    
+    // 이미 완주한 카트는 물폭탄 사용 안함
+    const finished = raceResults.map(result => 
+        participants.findIndex(name => name === result.name)
+    );
+    if (finished.includes(kartIndex)) return;
+    
     const currentKartY = kartProgress[kartIndex];
     
     // 좌우 카트가 있는지 확인
@@ -591,27 +616,31 @@ function checkWaterBombTrigger(kartIndex, kartProgress) {
     let rightKart = kartIndex + 1;
     
     let hasAdjacentKart = false;
+    let adjacentKarts = [];
     
     // 왼쪽 카트 확인
-    if (leftKart >= 0 && leftKart < participants.length) {
+    if (leftKart >= 0 && leftKart < participants.length && !finished.includes(leftKart)) {
         const leftKartY = kartProgress[leftKart];
-        // 같은 수준(±30px 범위)에 있는지 확인
-        if (Math.abs(currentKartY - leftKartY) <= 30) {
+        // 같은 수준(±50px 범위)에 있는지 확인
+        if (Math.abs(currentKartY - leftKartY) <= 50) {
             hasAdjacentKart = true;
+            adjacentKarts.push('left');
         }
     }
     
     // 오른쪽 카트 확인
-    if (rightKart >= 0 && rightKart < participants.length) {
+    if (rightKart >= 0 && rightKart < participants.length && !finished.includes(rightKart)) {
         const rightKartY = kartProgress[rightKart];
-        // 같은 수준(±30px 범위)에 있는지 확인
-        if (Math.abs(currentKartY - rightKartY) <= 30) {
+        // 같은 수준(±50px 범위)에 있는지 확인
+        if (Math.abs(currentKartY - rightKartY) <= 50) {
             hasAdjacentKart = true;
+            adjacentKarts.push('right');
         }
     }
     
     // 인접한 카트가 있으면 물폭탄 발동
     if (hasAdjacentKart) {
+        console.log(`${participants[kartIndex]}님이 물폭탄 발동! 인접 카트: ${adjacentKarts.join(', ')}`);
         triggerWaterBomb(kartIndex);
     }
 }
@@ -620,17 +649,30 @@ function triggerWaterBomb(kartIndex) {
     const currentTime = Date.now();
     kartWaterBombUsed[kartIndex] = true;
     
-    // 좌우 카트 정지시키기
+    // 이미 완주한 카트는 제외
+    const finished = raceResults.map(result => 
+        participants.findIndex(name => name === result.name)
+    );
+    
+    // 좌우 바로 인접한 카트만 정지시키기 (한 대씩만)
     const leftKart = kartIndex - 1;
     const rightKart = kartIndex + 1;
     
-    if (leftKart >= 0 && leftKart < participants.length) {
-        kartStoppedUntil[leftKart] = currentTime + 1000; // 1초간 정지
+    let affectedKarts = [];
+    
+    // 왼쪽 바로 인접한 카트 하나만
+    if (leftKart >= 0 && !finished.includes(leftKart)) {
+        kartStoppedUntil[leftKart] = currentTime + 2000; // 2초간 정지
+        affectedKarts.push(participants[leftKart]);
     }
     
-    if (rightKart >= 0 && rightKart < participants.length) {
-        kartStoppedUntil[rightKart] = currentTime + 1000; // 1초간 정지
+    // 오른쪽 바로 인접한 카트 하나만
+    if (rightKart < participants.length && !finished.includes(rightKart)) {
+        kartStoppedUntil[rightKart] = currentTime + 2000; // 2초간 정지
+        affectedKarts.push(participants[rightKart]);
     }
+    
+    console.log(`${participants[kartIndex]}님의 물폭탄이 ${affectedKarts.join(', ')}님을 2초간 정지시켰습니다!`);
     
     // 물폭탄 시각적 효과
     showWaterBombEffect(kartIndex);
